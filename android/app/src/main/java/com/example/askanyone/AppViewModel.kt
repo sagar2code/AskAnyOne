@@ -19,7 +19,8 @@ import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
 
-class AppViewModel(application : Application) : AndroidViewModel(application) { // constructor +class declaration
+class AppViewModel(application : Application) : AndroidViewModel(application) { // class Child(x: X) : Parent(x)
+
 
     private val tokenManager = TokenManager(application)
     var loginError: String? by mutableStateOf(null)
@@ -52,7 +53,8 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
     private fun parseErrorMessage(errorBody: String?): String {
         return try {
             val body = errorBody ?: "{}"
-            val response = Gson().fromJson(body, ErrorResponse::class.java)
+            val response = Gson().fromJson(body, ErrorResponse::class.java)//invoking fromJson from Gson lib
+            // Gson is a java lib , soo ErrorResponse::class.java means giving the javaclass version of it
             response.error
         } catch (e: Exception) {
             "Something went wrong"
@@ -160,8 +162,8 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
                 }
 
                 val response = RetrofitClient.api.addQuestion(
-                    request = CreateQuestionRequest(title = title, body = body),
-                    token = "Bearer $savedToken"
+                    CreateQuestionRequest(title = title, body = body),
+                     "Bearer $savedToken"
                 )
 
                 if (response.isSuccessful) {
@@ -170,6 +172,7 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
                 } else {
                     addQuestionError = parseErrorMessage(response.errorBody()?.string())
                     if (response.code() == 403) {
+
                         kotlinx.coroutines.delay(5000)
                         logout { }
 

@@ -9,8 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.askanyone.models.Question
-import kotlinx.coroutines.launch
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,7 +19,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 
 
 @Composable
@@ -38,7 +35,7 @@ fun HomeScreen(
     ShowToast(appViewModel.deleteQuestionError) { appViewModel.deleteQuestionError = null }
 
     val questions = appViewModel.questions
-    var showMenu by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }// a boolean variable used to control the menu
 
     val forestGreen = Color(0xFF064E3B)
     val amber = Color(0xFFF59E0B)
@@ -139,8 +136,8 @@ fun HomeScreen(
 
         AnimatedVisibility(
             visible = showMenu,
-            enter = fadeIn(),
-            exit = fadeOut()
+            enter = fadeIn(),//how it appears
+            exit = fadeOut() //how it disappears
         ) {
             Box(
                 modifier = Modifier
@@ -173,18 +170,19 @@ fun HomeScreen(
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
-
+                     // top row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        //others text
                         Text(
                             "Others",
                             style = MaterialTheme.typography.titleLarge,
                             color = amber
                         )
-
+                         // others button which changes the show menu
                         TextButton(onClick = { showMenu = false }) {
                             Text("Close ✕", color = amber)
                         }

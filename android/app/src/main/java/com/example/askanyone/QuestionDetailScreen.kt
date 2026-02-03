@@ -105,7 +105,7 @@ fun QuestionDetailScreen(
                             onClick = {
                                 appViewModel.deleteQuestion(questionId) {
                                     navController.navigate("home") {
-                                        popUpTo("home") { inclusive = true }
+                                        popUpTo("home") { inclusive = true }//navigate +popup rebuilds the stack with a new root
                                     }
                                 }
                             },
