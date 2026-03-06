@@ -9,14 +9,23 @@ import com.example.askanyone.models.ErrorResponse
 import com.example.askanyone.datastore.TokenManager
 import androidx.lifecycle.viewModelScope
 import com.example.askanyone.models.Answer
+import com.example.askanyone.models.CompleteGoogleRequest
 import com.example.askanyone.models.CreateAnswerRequest
 import com.example.askanyone.models.CreateQuestionRequest
+import com.example.askanyone.models.GoogleRequest
 import com.example.askanyone.models.LoginRequest
 import com.example.askanyone.models.Question
 import com.example.askanyone.models.RegisterRequest
 import com.example.askanyone.network.RetrofitClient
 import com.google.gson.Gson
 import kotlinx.coroutines.launch
+import android.content.Context
+import android.net.Uri
+import com.example.askanyone.utils.uriToFile
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.asRequestBody
 
 
 class AppViewModel(application : Application) : AndroidViewModel(application) { // class Child(x: X) : Parent(x)
@@ -50,7 +59,11 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
     var answers by mutableStateOf<List<Answer>>(emptyList())
     var myQuestions by mutableStateOf<List<Question>>(emptyList())
 
-    private fun parseErrorMessage(errorBody: String?): String {
+    var needsUsername by mutableStateOf(false)
+    var pendingGoogleToken: String? by mutableStateOf(null)
+    var googleError: String? by mutableStateOf(null)
+
+    private fun parseErrorMessage(errorBody: String?): String {// retrofit doesnt automatically parse error jsons ,, so we manually do it
         return try {
             val body = errorBody ?: "{}"
             val response = Gson().fromJson(body, ErrorResponse::class.java)//invoking fromJson from Gson lib
@@ -88,13 +101,74 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
             }
         }
     }
+    fun googleLogin(idToken: String) {
 
-    fun register(email: String, password: String, onSuccess: () -> Unit) {
+        googleError = null
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.api.googleLogin(
+                    GoogleRequest(idToken)
+                )
+
+                if (response.isSuccessful) {
+                    val body = response.body()
+
+                    if (body?.needsUsername == true) {
+                        needsUsername = true
+                        pendingGoogleToken = idToken
+                    } else {
+                        val tokenValue = body?.token
+                        if (tokenValue != null) {
+                            tokenManager.saveToken(tokenValue)
+                            token = tokenValue
+                        } else {
+                            googleError = "Invalid server response"
+                        }
+                    }
+                } else {
+                    googleError = parseErrorMessage(response.errorBody()?.string())
+                }
+
+            } catch (e: Exception) {
+                googleError = e.message ?: "Google login failed"
+            }
+        }
+    }
+
+
+    fun completeGoogleRegistration(username: String) {
+
+        val idToken = pendingGoogleToken ?: return
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.api.completeGoogleRegistration(
+                    CompleteGoogleRequest(idToken, username)
+                )
+
+                if (response.isSuccessful) {
+                    val tokenValue = response.body()?.token
+                    if (tokenValue != null) {
+                        tokenManager.saveToken(tokenValue)
+                        token = tokenValue
+                        needsUsername = false
+                        pendingGoogleToken = null
+                    }
+                } else {
+                    googleError = parseErrorMessage(response.errorBody()?.string())
+                }
+
+            } catch (e: Exception) {
+                googleError = "Failed to complete registration"
+            }
+        }
+    }
+    fun register(email: String, password: String, username :String, onSuccess: () -> Unit) {
         registerError = null
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.api.register(RegisterRequest(email, password))
+                val response = RetrofitClient.api.register(RegisterRequest(email, password,username))
 
                 if (response.isSuccessful) {
                     val tokenValue = response.body()?.token
@@ -149,7 +223,7 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
         }
     }
 
-    fun addQuestion(title: String, body: String, onSuccess: () -> Unit) {
+    fun addQuestion(title: String, body: String, imageUri: Uri?, context: Context, onSuccess: () -> Unit) {
         addQuestionError = null
 
         viewModelScope.launch {
@@ -161,9 +235,22 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
                     return@launch
                 }
 
+                val titleBody = title.toRequestBody("text/plain".toMediaType())
+                val bodyBody = body.toRequestBody("text/plain".toMediaType())
+
+                var imagePart: MultipartBody.Part? = null
+
+                if (imageUri != null) {
+                    val file = uriToFile(context, imageUri)
+                    val requestFile = file.asRequestBody("image/*".toMediaType())
+                    imagePart = MultipartBody.Part.createFormData("image", file.name, requestFile)
+                }
+
                 val response = RetrofitClient.api.addQuestion(
-                    CreateQuestionRequest(title = title, body = body),
-                     "Bearer $savedToken"
+                    titleBody,
+                    bodyBody,
+                    imagePart,
+                    "Bearer $savedToken"
                 )
 
                 if (response.isSuccessful) {
@@ -172,10 +259,8 @@ class AppViewModel(application : Application) : AndroidViewModel(application) { 
                 } else {
                     addQuestionError = parseErrorMessage(response.errorBody()?.string())
                     if (response.code() == 403) {
-
                         kotlinx.coroutines.delay(5000)
                         logout { }
-
                         return@launch
                     }
                 }

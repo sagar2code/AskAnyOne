@@ -19,7 +19,12 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.askanyone.AppViewModel
 import com.example.askanyone.ShowToast
-
+import android.app.Activity
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.api.signin.*
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
@@ -33,7 +38,39 @@ fun LoginScreen(
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
+    val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+        .requestIdToken("524926722649-6l7nioc1mpnps49uj9iovaroetg0lp66.apps.googleusercontent.com")
+        .requestEmail()
+        .build()
+
+    val googleSignInClient = GoogleSignIn.getClient(context, gso)
+
+    val launcher = rememberLauncherForActivityResult( //launcher to start another activity and receive its result
+        /*
+        A contract class that defines:
+        What type of activity is started ,What type of result is returned , here it means sending intents*/
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+
+        if (result.resultCode == Activity.RESULT_OK) {
+
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account.idToken
+
+                if (idToken != null) {
+                    appViewModel.googleLogin(idToken)
+                }
+
+            } catch (e: ApiException) {
+                e.printStackTrace()
+            }
+        }
+    }
     // Dimmed background + popup box
     Box(
         modifier = Modifier
@@ -132,22 +169,23 @@ fun LoginScreen(
                     )
                 }
 
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 OutlinedButton(
-                    onClick = { navController.popBackStack() },
+                    onClick = {
+
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            launcher.launch(googleSignInClient.signInIntent)
+                        }
+
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(2.dp, amber)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "Back",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = amber
-                    )
+                    Text("Continue with Google")
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))

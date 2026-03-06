@@ -21,7 +21,7 @@ export function authMiddleware(req, res, next) {
     req = {
         headers: {...},
         body: {...},
-        user: { userId: 5, iat: ..., exp: ... },
+        user: { userId: 5 , username : sagar, iat: ..., exp: ... },
         ...
           }
 

@@ -10,10 +10,10 @@ import androidx.compose.ui.platform.LocalContext
 fun ShowToast(message: String? ,onShown:()->Unit ) {
     val context = LocalContext.current
 
-    LaunchedEffect(message) {
-        if (!message.isNullOrBlank()) {
+     LaunchedEffect(message) {
+       if (!message.isNullOrBlank()) {
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
             onShown()
-        }
+      }
     }
 }

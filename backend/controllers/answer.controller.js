@@ -5,7 +5,16 @@ export async function getAnswersByQuestion(req, res) {
     const { id } = req.params;
 
     const result = await pool.query(
-      "SELECT id, body, user_id, question_id FROM answers WHERE question_id = $1 ORDER BY id DESC",
+      `SELECT 
+          a.id,
+          a.body,
+          a.user_id,
+          a.question_id,
+          u.username
+       FROM answers a
+       JOIN users u ON a.user_id = u.id
+       WHERE a.question_id = $1
+       ORDER BY a.id DESC`,
       [id]
     );
 

@@ -65,7 +65,7 @@ fun MyDoubtsScreen(
                     Column(modifier = Modifier.padding(12.dp)) {
 
                         Text(
-                            text = "User: ${q.user_id}",
+                            text = "User: ${q.username  }",
                             color = forestGreen,
                             fontSize = 13.sp
                         )

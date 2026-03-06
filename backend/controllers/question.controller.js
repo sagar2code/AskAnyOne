@@ -3,7 +3,16 @@ import pool from "../db/database.js";
 export async function getAllQuestions(req, res) {
   try {
     const result = await pool.query(
-      "SELECT id, title, body, image_url, user_id FROM questions ORDER BY id DESC"
+      `SELECT 
+          q.id,
+          q.title,
+          q.body,
+          q.image_url,
+          q.user_id,
+          u.username
+        FROM questions q
+        JOIN users u ON q.user_id = u.id
+        ORDER BY q.id DESC;`
     );
     res.json(result.rows);
   } catch (err) {
@@ -19,12 +28,18 @@ export async function createQuestion(req, res) {
     if (!title || !body) {
       return res.status(400).json({ error: "Title and body required" });
     }
+    
 
+    let imageUrl= null ;
+    if (req.file){
+      imageUrl= req.file.path
+    }
+    
     const result = await pool.query(
-      `INSERT INTO questions (title, body, user_id)
-       VALUES ($1, $2, $3)
+      `INSERT INTO questions (title, body, image_url, user_id)
+       VALUES ($1, $2, $3, $4)
        RETURNING *`,
-      [title, body, req.user.userId]
+      [title, body, imageUrl, req.user.userId]
     );
 
     res.status(201).json(result.rows[0]);
@@ -40,15 +55,25 @@ export async function getQuestionById(req, res) {
     const { id } = req.params;
 
     const result = await pool.query(
-      "SELECT id, title, body, image_url, user_id FROM questions WHERE id = $1",
+      `SELECT 
+          q.id,
+          q.title,
+          q.body,
+          q.image_url,
+          q.user_id,
+          u.username
+       FROM questions q
+       JOIN users u ON q.user_id = u.id
+       WHERE q.id = $1`,
       [id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Question not found" });//dot means it accesses the part inside
+      return res.status(404).json({ error: "Question not found" });
     }
 
     res.json(result.rows[0]);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch question" });

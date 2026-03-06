@@ -46,6 +46,11 @@ fun AppNavigation(
             RegisterScreen(navController, appViewModel)
         }
 
+        composable("choose_username") {
+            ChooseUsernameScreen(navController, appViewModel)
+        }
+
+
         composable("home") {
             HomeScreen(navController, appViewModel)
         }

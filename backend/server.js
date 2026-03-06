@@ -31,3 +31,4 @@ pool.query("SELECT NOW()", (err, res) => {
     console.log("DB connected at:", res.rows[0].now);
   }
 });
+  

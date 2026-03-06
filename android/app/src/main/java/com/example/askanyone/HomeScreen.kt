@@ -27,7 +27,7 @@ fun HomeScreen(
     appViewModel: AppViewModel
 ) {
     LaunchedEffect(Unit) {
-        appViewModel.fetchQuestions()
+        appViewModel.fetchQuestions() // loads the question into question list
     }
 
     ShowToast(appViewModel.getQuestionError) { appViewModel.getQuestionError = null }
@@ -81,13 +81,14 @@ fun HomeScreen(
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                         onClick = {
+
                             navController.navigate("question_detail/${q.id}")
                         }
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
 
                             Text(
-                                text = "User: ${q.user_id}",
+                                text = "User: ${q.username}",
                                 color = forestGreen,
                                 fontSize = 13.sp
                             )
